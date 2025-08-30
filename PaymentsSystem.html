@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Processing System Design</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f8f9fa;
+        }
+        
+        .container {
+            max-width: 210mm;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+        }
+        
+        .page {
+            padding: 40px;
+            min-height: 297mm;
+            page-break-after: always;
+        }
+        
+        .page:last-child {
+            page-break-after: auto;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            border-bottom: 4px solid #3498db;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            color: #34495e;
+            font-size: 1.8em;
+            margin: 30px 0 15px 0;
+            border-left: 5px solid #3498db;
+            padding-left: 15px;
+        }
+        
+        h3 {
+            color: #2c3e50;
+            font-size: 1.3em;
+            margin: 20px 0 10px 0;
+        }
+        
+        h4 {
+            color: #34495e;
+            font-size: 1.1em;
+            margin: 15px 0 8px 0;
+        }
+        
+        .title-page {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .title-page h1 {
+            font-size: 3.5em;
+            border: none;
+            margin-bottom: 30px;
+        }
+        
+        .subtitle {
+            font-size: 1.5em;
+            margin-bottom: 40px;
+            opacity: 0.9;
+        }
+        
+        .author {
+            font-size: 1.2em;
+            opacity: 0.8;
+        }
+        
+        .diagram {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+        }
+        
+        .box {
+            display: inline-block;
+            background: #3498db;
+            color: white;
+            padding: 10px 15px;
+            margin: 5px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .api-box {
+            background: #e74c3c;
+        }
+        
+        .db-box {
+            background: #27ae60;
+        }
+        
+        .service-box {
+            background: #f39c12;
+        }
+        
+        .external-box {
+            background: #9b59b6;
+        }
+        
+        .arrow {
+            font-size: 1.5em;
+            margin: 0 10px;
+            color: #2c3e50;
+        }
+        
+        .code-block {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #3498db;
+            color: white;
+            font-weight: bold;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        
+        .requirement-box {
+            background: #e8f6ff;
+            border-left: 5px solid #3498db;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .warning-box {
+            background: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .success-box {
+            background: #d4edda;
+            border-left: 5px solid #28a745;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        ul, ol {
+            padding-left: 30px;
+            margin: 10px 0;
+        }
+        
+        li {
+            margin: 5px 0;
+        }
+        
+        .flow-diagram {
+            background: white;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 30px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .flow-step {
+            background: #3498db;
+            color: white;
+            padding: 15px 20px;
+            margin: 10px;
+            border-radius: 25px;
+            display: inline-block;
+            font-weight: bold;
+            min-width: 150px;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .metric-card {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .metric-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #3498db;
+        }
+        
+        @media print {
+            .page {
+                page-break-after: always;
+            }
+            
+            .title-page {
+                height: 100vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Title Page -->
+        <div class="title-page">
+            <h1>Payment Processing System Design</h1>
+            <div class="subtitle">Scalable Architecture for Millions of Daily Transactions</div>
+            <div class="author">System Design Interview Document</div>
+        </div>
+
+        <!-- Requirements Gathering -->
+        <div class="page">
+            <h1>1. Requirements Gathering</h1>
+            
+            <h2>1.1 Problem Statement</h2>
+            <div class="requirement-box">
+                <strong>Design a payment processing system that can handle millions of daily transactions while ensuring no duplicate payments are posted.</strong>
+            </div>
+
+            <h2>1.2 Clarifying Questions</h2>
+            <ul>
+                <li><strong>Scale:</strong> How many transactions per day? Peak TPS?</li>
+                <li><strong>Payment Types:</strong> Credit cards, digital wallets, bank transfers?</li>
+                <li><strong>Geographic Scope:</strong> Global or regional deployment?</li>
+                <li><strong>Consistency:</strong> Strong or eventual consistency requirements?</li>
+                <li><strong>Latency:</strong> What's the acceptable response time?</li>
+                <li><strong>Compliance:</strong> PCI DSS, GDPR, other regulations?</li>
+            </ul>
+
+            <h2>1.3 Functional Requirements</h2>
+            <ol>
+                <li><strong>Payment Processing:</strong> Process various payment methods</li>
+                <li><strong>Duplicate Prevention:</strong> Ensure no duplicate transactions</li>
+                <li><strong>Transaction Management:</strong> Handle refunds, reversals, cancellations</li>
+                <li><strong>Real-time Status:</strong> Provide immediate transaction status</li>
+                <li><strong>Audit Trail:</strong> Maintain complete transaction history</li>
+                <li><strong>Webhook Support:</strong> Notify merchants of status changes</li>
+                <li><strong>Multi-currency:</strong> Support international transactions</li>
+            </ol>
+
+            <h2>1.4 Non-Functional Requirements</h2>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-number">5M+</div>
+                    <div>Daily Transactions</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-number">12K</div>
+                    <div>Peak TPS</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-number">99.99%</div>
+                    <div>Availability</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-number">&lt;200ms</div>
+                    <div>Response Time</div>
+                </div>
+            </div>
+
+            <h3>Additional Requirements:</h3>
+            <ul>
+                <li><strong>Security:</strong> PCI DSS compliance, encryption, fraud detection</li>
+                <li><strong>Scalability:</strong> Horizontal scaling capability</li>
+                <li><strong>Consistency:</strong> ACID properties for financial data</li>
+                <li><strong>Disaster Recovery:</strong> Multi-region backup and failover</li>
+                <li><strong>Monitoring:</strong> Real-time metrics and alerting</li>
+            </ul>
+
+            <h2>1.5 Success Metrics</h2>
+            <table>
+                <tr>
+                    <th>Metric</th>
+                    <th>Target</th>
+                    <th>Critical Threshold</th>
+                </tr>
+                <tr>
+                    <td>Transaction Success Rate</td>
+                    <td>99.95%</td>
+                    <td>&lt; 99.9%</td>
+                </tr>
+                <tr>
+                    <td>Duplicate Rate</td>
+                    <td>&lt; 0.01%</td>
+                    <td>&gt; 0.1%</td>
+                </tr>
+                <tr>
+                    <td>Average Response Time</td>
+                    <td>&lt; 150ms</td>
+                    <td>&gt; 300ms</td>
+                </tr>
+                <tr>
+                    <td>System Availability</td>
+                    <td>99.99%</td>
+                    <td>&lt; 99.9%</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- API Design -->
+        <div class="page">
+            <h1>2. API Design</h1>
+
+            <h2>2.1 Core API Endpoints</h2>
+
+            <h3>Process Payment</h3>
+            <div class="code-block">
+POST /api/v1/payments
+Headers:
+  Content-Type: application/json
+  Authorization: Bearer {token}
+  Idempotency-Key: {unique-key}
+
+Request Body:
+{
+  "amount": 10000,
+  "currency": "USD",
+  "payment_method": {
+    "type": "card",
+    "token": "pm_1234567890"
+  },
+  "merchant_id": "merchant_123",
+  "description": "Order #12345",
+  "metadata": {
+    "order_id": "12345",
+    "customer_id": "cust_456"
+  }
+}
+
+Response (201):
+{
+  "id": "pay_1234567890",
+  "status": "processing",
+  "amount": 10000,
+  "currency": "USD",
+  "created_at": "2024-01-15T10:30:00Z",
+  "estimated_completion": "2024-01-15T10:30:05Z"
+}
+            </div>
+
+            <h3>Get Payment Status</h3>
+            <div class="code-block">
+GET /api/v1/payments/{payment_id}
+
+Response (200):
+{
+  "id": "pay_1234567890",
+  "status": "completed",
+  "amount": 10000,
+  "currency": "USD",
+  "payment_method": {
+    "type": "card",
+    "last4": "4242",
+    "brand": "visa"
+  },
+  "created_at": "2024-01-15T10:30:00Z",
+  "completed_at": "2024-01-15T10:30:03Z",
+  "fees": {
+    "processing_fee": 300,
+    "currency": "USD"
+  }
+}
+            </div>
+
+            <h3>Process Refund</h3>
+            <div class="code-block">
+POST /api/v1/payments/{payment_id}/refunds
+Headers:
+  Idempotency-Key: {unique-key}
+
+Request Body:
+{
+  "amount": 5000,
+  "reason": "customer_request",
+  "metadata": {
+    "support_ticket": "T-789"
+  }
+}
+
+Response (201):
+{
+  "id": "ref_1234567890",
+  "payment_id": "pay_1234567890",
+  "amount": 5000,
+  "currency": "USD",
+  "status": "processing",
+  "created_at": "2024-01-15T14:20:00Z"
+}
+            </div>
+
+            <h2>2.2 Webhook API</h2>
+            <div class="code-block">
+POST {merchant_webhook_url}
+Headers:
+  Content-Type: application/json
+  X-Signature: {hmac_signature}
+
+Payload:
+{
+  "event_type": "payment.completed",
+  "event_id": "evt_123456",
+  "created_at": "2024-01-15T10:30:03Z",
+  "data": {
+    "payment": {
+      "id": "pay_1234567890",
+      "status": "completed",
+      "amount": 10000,
+      "currency": "USD"
+    }
+  }
+}
+            </div>
+
+            <h2>2.3 Error Responses</h2>
+            <table>
+                <tr>
+                    <th>Status Code</th>
+                    <th>Error Type</th>
+                    <th>Description</th>
+                </tr>
+                <tr>
+                    <td>400</td>
+                    <td>invalid_request</td>
+                    <td>Missing required parameters</td>
+                </tr>
+                <tr>
+                    <td>401</td>
+                    <td>authentication_failed</td>
+                    <td>Invalid API key</td>
+                </tr>
+                <tr>
+                    <td>409</td>
+                    <td>duplicate_request</td>
+                    <td>Request already processing</td>
+                </tr>
+                <tr>
+                    <td>429</td>
+                    <td>rate_limit_exceeded</td>
+                    <td>Too many requests</td>
+                </tr>
+                <tr>
+                    <td>402</td>
+                    <td>payment_failed</td>
+                    <td>Card declined or insufficient funds</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Database Design -->
+        <div class="page">
+            <h1>3. Database Design</h1>
+
+            <h2>3.1 Core Tables Schema</h2>
+
+            <h3>Payments Table</h3>
+            <div class="code-block">
+CREATE TABLE payments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    merchant_id UUID NOT NULL,
+    amount DECIMAL(12,2) NOT NULL,
+    currency VARCHAR(3) NOT NULL,
+    status payment_status NOT NULL DEFAULT 'pending',
+    payment_method_id UUID,
+    external_transaction_id VARCHAR(255),
+    description TEXT,
+    metadata JSONB,
+    idempotency_key VARCHAR(255) UNIQUE,
+    failure_reason TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP,
+    
+    -- Indexes
+    INDEX idx_merchant_created (merchant_id, created_at DESC),
+    INDEX idx_status_created (status, created_at),
+    INDEX idx_idempotency (idempotency_key),
+    INDEX idx_external_tx (external_transaction_id)
+);
+
+-- Enum for payment status
+CREATE TYPE payment_status AS ENUM (
+    'pending', 'processing', 'completed', 
+    'failed', 'cancelled', 'refunded'
+);
+            </div>
+
+            <h3>Idempotency Table</h3>
+            <div class="code-block">
+CREATE TABLE idempotency_keys (
+    idempotency_key VARCHAR(255) PRIMARY KEY,
+    resource_id UUID NOT NULL,
+    resource_type VARCHAR(50) NOT NULL,
+    status VARCHAR(20) NOT NULL,
+    request_hash VARCHAR(64),
+    response_body TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NOT NULL,
+    
+    INDEX idx_expires (expires_at),
+    INDEX idx_resource (resource_id, resource_type)
+);
+            </div>
+
+            <h3>Payment Methods Table</h3>
+            <div class="code-block">
+CREATE TABLE payment_methods (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    customer_id UUID NOT NULL,
+    type payment_method_type NOT NULL,
+    provider VARCHAR(50) NOT NULL,
+    provider_token VARCHAR(255) NOT NULL,
+    metadata JSONB,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    INDEX idx_customer (customer_id),
+    INDEX idx_provider_token (provider, provider_token)
+);
+
+CREATE TYPE payment_method_type AS ENUM (
+    'card', 'bank_account', 'digital_wallet', 'crypto'
+);
+            </div>
+
+            <h2>3.2 Partitioning Strategy</h2>
+            <div class="code-block">
+-- Partition payments table by date for better performance
+CREATE TABLE payments_2024_01 PARTITION OF payments
+    FOR VALUES FROM ('2024-01-01') TO ('2024-02-01');
+
+CREATE TABLE payments_2024_02 PARTITION OF payments
+    FOR VALUES FROM ('2024-02-01') TO ('2024-03-01');
+
+-- Auto-create partitions using pg_partman extension
+SELECT partman.create_parent(
+    p_parent_table => 'public.payments',
+    p_control => 'created_at',
+    p_type => 'range',
+    p_interval => 'monthly'
+);
+            </div>
+
+            <h2>3.3 Read Replicas & Sharding</h2>
+            <div class="success-box">
+                <strong>Database Scaling Strategy:</strong>
+                <ul>
+                    <li><strong>Read Replicas:</strong> 3 read replicas for analytical queries</li>
+                    <li><strong>Horizontal Sharding:</strong> Shard by merchant_id hash</li>
+                    <li><strong>Connection Pooling:</strong> PgBouncer with 1000 connections per shard</li>
+                    <li><strong>Backup Strategy:</strong> Daily backups with point-in-time recovery</li>
+                </ul>
+            </div>
+
+            <h2>3.4 Data Retention Policy</h2>
+            <table>
+                <tr>
+                    <th>Data Type</th>
+                    <th>Hot Storage</th>
+                    <th>Cold Storage</th>
+                    <th>Archival</th>
+                </tr>
+                <tr>
+                    <td>Active Payments</td>
+                    <td>6 months</td>
+                    <td>2 years</td>
+                    <td>7 years</td>
+                </tr>
+                <tr>
+                    <td>Idempotency Keys</td>
+                    <td>24 hours</td>
+                    <td>7 days</td>
+                    <td>Delete</td>
+                </tr>
+                <tr>
+                    <td>Audit Logs</td>
+                    <td>1 year</td>
+                    <td>5 years</td>
+                    <td>Permanent</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- High Level Design -->
+        <div class="page">
+            <h1>4. High Level Design (HLD)</h1>
+
+            <h2>4.1 System Architecture Overview</h2>
+            <div class="diagram">
+                <div style="margin-bottom: 30px;">
+                    <div class="box">Client Apps</div>
+                    <span class="arrow">→</span>
+                    <div class="box">CDN/Load Balancer</div>
+                    <span class="arrow">→</span>
+                    <div class="box api-box">API Gateway</div>
+                </div>
+                
+                <div style="margin: 20px 0;">
+                    <span class="arrow">↓</span>
+                </div>
+                
+                <div style="margin-bottom: 30px;">
+                    <div class="box service-box">Payment Service</div>
+                    <span class="arrow">↔</span>
+                    <div class="box service-box">Idempotency Service</div>
+                    <span class="arrow">↔</span>
+                    <div class="box service-box">Fraud Detection</div>
+                </div>
+                
+                <div style="margin: 20px 0;">
+                    <span class="arrow">↓</span>
+                </div>
+                
+                <div style="margin-bottom: 30px;">
+                    <div class="box">Message Queue<br/>(Kafka)</div>
+                    <span class="arrow">→</span>
+                    <div class="box service-box">Transaction Processor</div>
+                    <span class="arrow">→</span>
+                    <div class="box external-box">Payment Providers</div>
+                </div>
+                
+                <div style="margin: 20px 0;">
+                    <span class="arrow">↓</span>
+                </div>
+                
+                <div>
+                    <div class="box db-box">Primary DB<br/>(PostgreSQL)</div>
+                    <span class="arrow">↔</span>
+                    <div class="box db-box">Cache<br/>(Redis)</div>
+                    <span class="arrow">↔</span>
+                    <div class="box db-box">Analytics DB</div>
+                </div>
+            </div>
+
+            <h2>4.2 Component Responsibilities</h2>
+            
+            <h3>API Gateway</h3>
+            <ul>
+                <li>Request routing and load balancing</li>
+                <li>Authentication and authorization</li>
+                <li>Rate limiting and DDoS protection</li>
+                <li>Request/response transformation</li>
+                <li>SSL termination</li>
+            </ul>
+
+            <h3>Payment Service</h3>
+            <ul>
+                <li>Core payment processing logic</li>
+                <li>Payment method validation</li>
+                <li>Business rule enforcement</li>
+                <li>External provider integration</li>
+                <li>Webhook management</li>
+            </ul>
+
+            <h3>Idempotency Service</h3>
+            <ul>
+                <li>Duplicate request detection</li>
+                <li>Response caching</li>
+                <li>Request fingerprinting</li>
+                <li>TTL-based cleanup</li>
+            </ul>
+
+            <h2>4.3 Data Flow Architecture</h2>
+            <div class="flow-diagram">
+                <div>
+                    <div class="flow-step">1. Request Received</div>
+                    <div class="arrow">↓</div>
+                    <div class="flow-step">2. Authentication</div>
+                    <div class="arrow">↓</div>
+                    <div class="flow-step">3. Idempotency Check</div>
+                    <div class="arrow">↓</div>
+                    <div class="flow-step">4. Fraud Screening</div>
+                    <div class="arrow">↓</div>
+                    <div class="flow-step">5. Payment Processing</div>
+                    <div class="arrow">↓</div>
+                    <div class="flow-step">6. Response & Webhook</div>
+                </div>
+            </div>
+
+            <h2>4.4 Technology Stack</h2>
+            <table>
+                <tr>
+                    <th>Layer</th>
+                    <th>Technology</th>
+                    <th>Justification</th>
+                </tr>
+                <tr>
+                    <td>Load Balancer</td>
+                    <td>AWS ALB / Nginx</td>
+                    <td>High availability, SSL termination</td>
+                </tr>
+                <tr>
+                    <td>API Gateway</td>
+                    <td>Kong / AWS API Gateway</td>
+                    <td>Feature-rich, plugin ecosystem</td>
+                </tr>
+                <tr>
+                    <td>Application</td>
+                    <td>Java Spring Boot / Go</td>
+                    <td>Performance, ecosystem, team expertise</td>
+                </tr>
+                <tr>
+                    <td>Database</td>
+                    <td>PostgreSQL</td>
+                    <td>ACID compliance, JSON support</td>
+                </tr>
+                <tr>
+                    <td>Cache</td>
+                    <td>Redis Cluster</td>
+                    <td>High performance, distributed</td>
+                </tr>
+                <tr>
+                    <td>Message Queue</td>
+                    <td>Apache Kafka</td>
+                    <td>High throughput, durability</td>
+                </tr>
+                <tr>
+                    <td>Monitoring</td>
+                    <td>Prometheus + Grafana</td>
+                    <td>Comprehensive metrics, alerting</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Deep Dive -->
+        <div class="page">
+            <h1>5. Deep Dive - Duplicate Prevention</h1>
+
+            <h2>5.1 Multi-Layer Duplicate Prevention Strategy</h2>
+
+            <div class="warning-box">
+                <strong>Critical Requirement:</strong> Financial systems must guarantee exactly-once payment processing. Our strategy uses multiple layers of protection to ensure zero duplicates.
+            </div>
+
+            <h3>Layer 1: Idempotency Keys</h3>
+            <div class="code-block">
+public class IdempotencyService {
+    
+    @Autowired
+    private RedisTemplate&lt;String, String&gt; redisTemplate;
+    
+    @Autowired
+    private IdempotencyRepository repository;
+    
+    public IdempotencyResult checkIdempotency(String key, String requestHash) {
+        // Check Redis cache first (fast path)
+        String cached = redisTemplate.opsForValue().get("idem:" + key);
+        if (cached != null) {
+            return parseResult(cached);
+        }
+        
+        // Check database (slower but persistent)
+        Optional&lt;IdempotencyRecord&gt; record = repository.findByKey(key);
+        if (record.isPresent()) {
+            IdempotencyRecord r = record.get();
+            
+            // Cache the result for future requests
+            redisTemplate.opsForValue().set("idem:" + key, 
+                serialize(r), Duration.ofHours(24));
+            
+            return new IdempotencyResult(r.getStatus(), r.getResponseBody());
+        }
+        
+        // Create new idempotency record
+        IdempotencyRecord newRecord = new IdempotencyRecord(
+            key, requestHash, "processing", Instant.now().plus(Duration.ofHours(24))
+        );
+        repository.save(newRecord);
+        
+        return new IdempotencyResult("new", null);
+    }
+}
+            </div>
+
+            <h3>Layer 2: Database Constraints</h3>
+            <div class="code-block">
+-- Unique constraints prevent duplicates at DB level
+ALTER TABLE payments ADD CONSTRAINT uk_idempotency_key 
+    UNIQUE (idempotency_key);
+
+-- Composite unique constraint for additional safety
+ALTER TABLE payments ADD CONSTRAINT uk_merchant_external_id 
+    UNIQUE (merchant_id, external_transaction_id);
+
+-- Check constraint for amount validation
+ALTER TABLE payments ADD CONSTRAINT chk_amount_positive 
+    CHECK (amount > 0 AND amount <= 999999999.99);
+            </div>
+
+            <h3>Layer 3: Distributed Locks</h3>
+            <div class="code-block">
+@Service
+public class PaymentProcessor {
+    
+    @Autowired
+    private RedissonClient redisson;
+    
+    public PaymentResult processPayment(PaymentRequest request) {
+        String lockKey = "payment_lock:" + request.getIdempotencyKey();
+        RLock lock = redisson.getLock(lockKey);
+        
+        try {
+            // Wait max 5 seconds, hold lock max 30 seconds
+            if (lock.tryLock(5, 30, TimeUnit.SECONDS)) {
+                return doProcessPayment(request);
+            } else {
+                throw new PaymentException("Unable to acquire processing lock");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new PaymentException("Payment processing interrupted");
+        } finally {
+            if (lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
+        }
+    }
+}
+            </div>
+
+            <h2>5.2 Request Flow with Duplicate Prevention</h2>
+            <div class="flow-diagram">
+                <div style="text-align: left; max-width: 800px; margin: 0 auto;">
+                    <div><strong>1. Request Validation</strong></div>
+                    <div style="margin-left: 20px;">• Validate idempotency key format</div>
+                    <div style="margin-left: 20px;">• Check required fields</div>
+                    <br/>
+                    
+                    <div><strong>2. Idempotency Check (Redis)</strong></div>
+                    <div style="margin-left: 20px;">• Fast cache lookup (< 1ms)</div>
+                    <div style="margin-left: 20px;">• Return cached response if exists</div>
+                    <br/>
+                    
+                    <div><strong
