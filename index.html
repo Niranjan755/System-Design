@@ -3,13 +3,779 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>System Design Collection</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --accent-color: #f59e0b;
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header p {
+            font-size: 1.25rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+            color: white;
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            opacity: 0.8;
+            font-size: 0.9rem;
+        }
+
+        .search-container {
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 1rem 1rem 1rem 3rem;
+            border: none;
+            border-radius: 50px;
+            font-size: 1rem;
+            background: var(--bg-secondary);
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+        }
+
+        .search-box:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            transform: scale(1.02);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+
+        .filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 2rem;
+            justify-content: center;
+        }
+
+        .filter-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .filter-btn:hover, .filter-btn.active {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+            transform: translateY(-2px);
+        }
+
+        .systems-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .system-card {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: var(--shadow-lg);
+            transition: all 0.3s ease;
+            border: 1px solid var(--border-color);
+        }
+
+        .system-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 10px 10px -5px rgb(0 0 0 / 0.04);
+        }
+
+        .card-header {
+            padding: 1.5rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 200%;
+            background: rgba(255, 255, 255, 0.1);
+            transform: rotate(45deg);
+            transition: all 0.3s ease;
+        }
+
+        .system-card:hover .card-header::before {
+            right: -30%;
+        }
+
+        .card-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.9;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .card-subtitle {
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        .card-description {
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .card-features {
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-tag {
+            display: inline-block;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin: 0.25rem 0.25rem 0.25rem 0;
+            border: 1px solid var(--border-color);
+        }
+
+        .card-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 3rem 0;
+            color: white;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 3rem;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .footer-link {
+            color: white;
+            text-decoration: none;
+            opacity: 0.8;
+            transition: opacity 0.3s ease;
+        }
+
+        .footer-link:hover {
+            opacity: 1;
+        }
+
+        .coming-soon {
+            opacity: 0.7;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .coming-soon::after {
+            content: 'Coming Soon';
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: var(--accent-color);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .floating-action {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--accent-color);
+            color: white;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow-lg);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.5rem;
+        }
+
+        .floating-action:hover {
+            transform: scale(1.1);
+            background: #d97706;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .header h1 {
+                font-size: 2.5rem;
+            }
+
+            .systems-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .card-actions {
+                flex-direction: column;
+            }
+
+            .filters {
+                justify-content: center;
+            }
+
+            .filter-btn {
+                font-size: 0.9rem;
+            }
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 3rem;
+            color: white;
+        }
+
+        .no-results i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+    </style>
 </head>
 <body>
-    <h1>System Design</h1>
-    <h3>
-        <a href="PaymentsSystem.html">Payments Service</a>   
-    </h3>
- 
+    <div class="container">
+        <header class="header">
+            <h1><i class="fas fa-cube"></i> System Design Collection</h1>
+            <p>Comprehensive system design documentation for scalable applications</p>
+        </header>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="totalSystems">2</div>
+                <div class="stat-label">System Designs</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">50K+</div>
+                <div class="stat-label">Daily Users</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">99.9%</div>
+                <div class="stat-label">Uptime Target</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">12</div>
+                <div class="stat-label">Technologies</div>
+            </div>
+        </div>
+
+        <div class="search-container">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" class="search-box" placeholder="Search system designs..." id="searchInput">
+        </div>
+
+        <div class="filters">
+            <button class="filter-btn active" data-filter="all">All Systems</button>
+            <button class="filter-btn" data-filter="financial">Financial</button>
+            <button class="filter-btn" data-filter="iot">IoT & Hardware</button>
+            <button class="filter-btn" data-filter="ecommerce">E-Commerce</button>
+            <button class="filter-btn" data-filter="social">Social Media</button>
+            <button class="filter-btn" data-filter="streaming">Media & Streaming</button>
+        </div>
+
+        <div class="systems-grid" id="systemsGrid">
+            <!-- Payment System Card -->
+            <div class="system-card" data-category="financial" data-keywords="payment processing transactions billing">
+                <div class="card-header">
+                    <div class="card-icon"><i class="fas fa-credit-card"></i></div>
+                    <h3 class="card-title">Payment Processing System</h3>
+                    <p class="card-subtitle">Scalable payment infrastructure</p>
+                </div>
+                <div class="card-body">
+                    <p class="card-description">
+                        A robust payment processing system designed to handle millions of daily transactions while ensuring no duplicate payments and maintaining PCI DSS compliance.
+                    </p>
+                    <div class="card-features">
+                        <span class="feature-tag">Microservices</span>
+                        <span class="feature-tag">PostgreSQL</span>
+                        <span class="feature-tag">Redis</span>
+                        <span class="feature-tag">Kafka</span>
+                        <span class="feature-tag">API Gateway</span>
+                    </div>
+                    <div class="card-stats">
+                        <div class="stat-item">
+                            <i class="fas fa-chart-line"></i>
+                            <span>5M+ Daily Transactions</span>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-clock"></i>
+                            <span>&lt;200ms Response</span>
+                        </div>
+                    </div>
+                    <div class="card-actions">
+                        <a href="PaymentsSystem.html" class="btn btn-primary">
+                            <i class="fas fa-book"></i> View Design
+                        </a>
+                        <a href="#" class="btn btn-secondary">
+                            <i class="fas fa-download"></i> Download PDF
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Parking System Card -->
+            <div class="system-card" data-category="iot" data-keywords="parking iot sensors real-time booking">
+                <div class="card-header">
+                    <div class="card-icon"><i class="fas fa-parking"></i></div>
+                    <h3 class="card-title">Smart Parking System</h3>
+                    <p class="card-subtitle">IoT-enabled parking management</p>
+                </div>
+                <div class="card-body">
+                    <p class="card-description">
+                        An intelligent parking management system with real-time spot tracking, automated billing, and seamless mobile integration for modern urban environments.
+                    </p>
+                    <div class="card-features">
+                        <span class="feature-tag">IoT Sensors</span>
+                        <span class="feature-tag">WebSocket</span>
+                        <span class="feature-tag">PostgreSQL</span>
+                        <span class="feature-tag">Redis</span>
+                        <span class="feature-tag">Real-time</span>
+                    </div>
+                    <div class="card-stats">
+                        <div class="stat-item">
+                            <i class="fas fa-car"></i>
+                            <span>50K+ Daily Vehicles</span>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <span>10K+ Parking Spots</span>
+                        </div>
+                    </div>
+                    <div class="card-actions">
+                        <a href="ParkingLot.html" class="btn btn-primary">
+                            <i class="fas fa-book"></i> View Design
+                        </a>
+                        <a href="#" class="btn btn-secondary">
+                            <i class="fas fa-download"></i> Download PDF
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coming Soon Cards -->
+            <div class="system-card coming-soon" data-category="social" data-keywords="social media chat messaging real-time">
+                <div class="card-header">
+                    <div class="card-icon"><i class="fas fa-comments"></i></div>
+                    <h3 class="card-title">Chat & Messaging System</h3>
+                    <p class="card-subtitle">Real-time communication platform</p>
+                </div>
+                <div class="card-body">
+                    <p class="card-description">
+                        A scalable real-time messaging system supporting group chats, file sharing, and push notifications with end-to-end encryption.
+                    </p>
+                    <div class="card-features">
+                        <span class="feature-tag">WebSocket</span>
+                        <span class="feature-tag">MongoDB</span>
+                        <span class="feature-tag">Redis</span>
+                        <span class="feature-tag">ElasticSearch</span>
+                    </div>
+                    <div class="card-stats">
+                        <div class="stat-item">
+                            <i class="fas fa-users"></i>
+                            <span>1M+ Active Users</span>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-bolt"></i>
+                            <span>&lt;50ms Latency</span>
+                        </div>
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn btn-primary" disabled>
+                            <i class="fas fa-clock"></i> Coming Soon
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="system-card coming-soon" data-category="ecommerce" data-keywords="ecommerce shopping cart inventory orders">
+                <div class="card-header">
+                    <div class="card-icon"><i class="fas fa-shopping-cart"></i></div>
+                    <h3 class="card-title">E-Commerce Platform</h3>
+                    <p class="card-subtitle">Scalable online shopping system</p>
+                </div>
+                <div class="card-body">
+                    <p class="card-description">
+                        A comprehensive e-commerce platform with inventory management, order processing, and recommendation engine for modern online retail.
+                    </p>
+                    <div class="card-features">
+                        <span class="feature-tag">Microservices</span>
+                        <span class="feature-tag">MySQL</span>
+                        <span class="feature-tag">ElasticSearch</span>
+                        <span class="feature-tag">Redis</span>
+                    </div>
+                    <div class="card-stats">
+                        <div class="stat-item">
+                            <i class="fas fa-shopping-bag"></i>
+                            <span>100K+ Daily Orders</span>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-boxes"></i>
+                            <span>1M+ Products</span>
+                        </div>
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn btn-primary" disabled>
+                            <i class="fas fa-clock"></i> Coming Soon
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="system-card coming-soon" data-category="streaming" data-keywords="video streaming media cdn live">
+                <div class="card-header">
+                    <div class="card-icon"><i class="fas fa-play"></i></div>
+                    <h3 class="card-title">Video Streaming Platform</h3>
+                    <p class="card-subtitle">Netflix-scale video delivery</p>
+                </div>
+                <div class="card-body">
+                    <p class="card-description">
+                        A global video streaming platform with adaptive bitrate streaming, content delivery network, and personalized recommendations.
+                    </p>
+                    <div class="card-features">
+                        <span class="feature-tag">CDN</span>
+                        <span class="feature-tag">Cassandra</span>
+                        <span class="feature-tag">Kafka</span>
+                        <span class="feature-tag">ML Pipeline</span>
+                    </div>
+                    <div class="card-stats">
+                        <div class="stat-item">
+                            <i class="fas fa-play-circle"></i>
+                            <span>10M+ Streams/Day</span>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-globe"></i>
+                            <span>100+ Countries</span>
+                        </div>
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn btn-primary" disabled>
+                            <i class="fas fa-clock"></i> Coming Soon
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="system-card coming-soon" data-category="social" data-keywords="url shortener analytics tracking">
+                <div class="card-header">
+                    <div class="card-icon"><i class="fas fa-link"></i></div>
+                    <h3 class="card-title">URL Shortener Service</h3>
+                    <p class="card-subtitle">Scalable link management</p>
+                </div>
+                <div class="card-body">
+                    <p class="card-description">
+                        A high-performance URL shortening service with analytics, custom domains, and API access for enterprise usage.
+                    </p>
+                    <div class="card-features">
+                        <span class="feature-tag">Base62 Encoding</span>
+                        <span class="feature-tag">Redis</span>
+                        <span class="feature-tag">PostgreSQL</span>
+                        <span class="feature-tag">Analytics</span>
+                    </div>
+                    <div class="card-stats">
+                        <div class="stat-item">
+                            <i class="fas fa-link"></i>
+                            <span>1B+ URLs/Month</span>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-tachometer-alt"></i>
+                            <span>&lt;10ms Response</span>
+                        </div>
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn btn-primary" disabled>
+                            <i class="fas fa-clock"></i> Coming Soon
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="no-results" id="noResults" style="display: none;">
+            <i class="fas fa-search"></i>
+            <h3>No systems found</h3>
+            <p>Try adjusting your search or filter criteria</p>
+        </div>
+
+        <footer class="footer">
+            <div class="footer-links">
+                <a href="#" class="footer-link">About</a>
+                <a href="#" class="footer-link">Documentation</a>
+                <a href="#" class="footer-link">GitHub</a>
+                <a href="#" class="footer-link">Contact</a>
+            </div>
+            <p>&copy; 2024 System Design Collection. Built for learning and reference.</p>
+        </footer>
+    </div>
+
+    <div class="floating-action" title="Suggest a System Design">
+        <i class="fas fa-plus"></i>
+    </div>
+
+    <script>
+        // Search functionality
+        const searchInput = document.getElementById('searchInput');
+        const systemsGrid = document.getElementById('systemsGrid');
+        const noResults = document.getElementById('noResults');
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        const totalSystemsCount = document.getElementById('totalSystems');
+
+        let currentFilter = 'all';
+
+        function filterSystems() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const cards = systemsGrid.querySelectorAll('.system-card');
+            let visibleCount = 0;
+
+            cards.forEach(card => {
+                const category = card.dataset.category;
+                const keywords = card.dataset.keywords;
+                const title = card.querySelector('.card-title').textContent.toLowerCase();
+                const description = card.querySelector('.card-description').textContent.toLowerCase();
+
+                const matchesFilter = currentFilter === 'all' || category === currentFilter;
+                const matchesSearch = searchTerm === '' || 
+                                    title.includes(searchTerm) || 
+                                    description.includes(searchTerm) || 
+                                    keywords.includes(searchTerm);
+
+                if (matchesFilter && matchesSearch) {
+                    card.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            noResults.style.display = visibleCount === 0 ? 'block' : 'none';
+            systemsGrid.style.display = visibleCount === 0 ? 'none' : 'grid';
+        }
+
+        searchInput.addEventListener('input', filterSystems);
+
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                filterSystems();
+            });
+        });
+
+        // Floating action button
+        document.querySelector('.floating-action').addEventListener('click', () => {
+            alert('Feature coming soon! You\'ll be able to suggest new system designs.');
+        });
+
+        // Animate cards on scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.system-card').forEach(card => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            observer.observe(card);
+        });
+
+        // Update stats dynamically
+        function updateStats() {
+            const totalCards = document.querySelectorAll('.system-card').length;
+            const availableCards = document.querySelectorAll('.system-card:not(.coming-soon)').length;
+            totalSystemsCount.textContent = availableCards;
+        }
+
+        updateStats();
+
+        // Add some interactive effects
+        document.querySelectorAll('.system-card:not(.coming-soon)').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.transform = 'translateY(-8px) scale(1.02)';
+            });
+            
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'translateY(0) scale(1)';
+            });
+        });
+    </script>
 </body>
 </html>
