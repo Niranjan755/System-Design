@@ -1,0 +1,1584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rate Limiter System Design</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f8f9fa;
+        }
+        
+        .container {
+            max-width: 210mm;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+        }
+        
+        .page {
+            padding: 40px;
+            min-height: 297mm;
+            page-break-after: always;
+        }
+        
+        .page:last-child {
+            page-break-after: auto;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            border-bottom: 4px solid #e67e22;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            color: #34495e;
+            font-size: 1.8em;
+            margin: 30px 0 15px 0;
+            border-left: 5px solid #e67e22;
+            padding-left: 15px;
+        }
+        
+        h3 {
+            color: #2c3e50;
+            font-size: 1.3em;
+            margin: 20px 0 10px 0;
+        }
+        
+        h4 {
+            color: #34495e;
+            font-size: 1.1em;
+            margin: 15px 0 8px 0;
+        }
+        
+        .title-page {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+            color: white;
+        }
+        
+        .title-page h1 {
+            font-size: 3.5em;
+            border: none;
+            margin-bottom: 30px;
+        }
+        
+        .subtitle {
+            font-size: 1.5em;
+            margin-bottom: 40px;
+            opacity: 0.9;
+        }
+        
+        .author {
+            font-size: 1.2em;
+            opacity: 0.8;
+        }
+        
+        .diagram {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+        }
+        
+        .box {
+            display: inline-block;
+            background: #e67e22;
+            color: white;
+            padding: 10px 15px;
+            margin: 5px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .api-box {
+            background: #3498db;
+        }
+        
+        .db-box {
+            background: #27ae60;
+        }
+        
+        .service-box {
+            background: #f39c12;
+        }
+        
+        .external-box {
+            background: #9b59b6;
+        }
+        
+        .limiter-box {
+            background: #e74c3c;
+        }
+        
+        .arrow {
+            font-size: 1.5em;
+            margin: 0 10px;
+            color: #2c3e50;
+        }
+        
+        .code-block {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #e67e22;
+            color: white;
+            font-weight: bold;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        
+        .requirement-box {
+            background: #fff3e0;
+            border-left: 5px solid #e67e22;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .warning-box {
+            background: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .success-box {
+            background: #d4edda;
+            border-left: 5px solid #28a745;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .algorithm-box {
+            background: #e8f4fd;
+            border-left: 5px solid #3498db;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        ul, ol {
+            padding-left: 30px;
+            margin: 10px 0;
+        }
+        
+        li {
+            margin: 5px 0;
+        }
+        
+        .flow-diagram {
+            background: white;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 30px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .flow-step {
+            background: #e67e22;
+            color: white;
+            padding: 15px 20px;
+            margin: 10px;
+            border-radius: 25px;
+            display: inline-block;
+            font-weight: bold;
+            min-width: 150px;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .metric-card {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .metric-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #e67e22;
+        }
+        
+        .algorithm-visual {
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .bucket {
+            display: inline-block;
+            width: 60px;
+            height: 80px;
+            border: 2px solid #3498db;
+            border-radius: 5px 5px 0 0;
+            margin: 10px;
+            position: relative;
+            vertical-align: bottom;
+        }
+        
+        .bucket-fill {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: #3498db;
+            opacity: 0.7;
+            border-radius: 0 0 3px 3px;
+        }
+        
+        .token-circle {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            background: #27ae60;
+            border-radius: 50%;
+            margin: 2px;
+            text-align: center;
+            color: white;
+            font-size: 10px;
+            line-height: 20px;
+        }
+        
+        @media print {
+            .page {
+                page-break-after: always;
+            }
+            
+            .title-page {
+                height: 100vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Title Page -->
+        <div class="title-page">
+            <h1>Rate Limiter System Design</h1>
+            <div class="subtitle">Scalable Traffic Control & API Protection</div>
+            <div class="author">System Design Interview Document</div>
+        </div>
+
+        <!-- Requirements Gathering -->
+        <div class="page">
+            <h1>1. Requirements Gathering</h1>
+            
+            <h2>1.1 Problem Statement</h2>
+            <div class="requirement-box">
+                <strong>Design a distributed rate limiter system that can protect APIs from abuse, ensure fair usage, and scale to handle millions of requests per second across multiple services.</strong>
+            </div>
+
+            <h2>1.2 Clarifying Questions</h2>
+            <ul>
+                <li><strong>Scale:</strong> How many requests per second? Peak traffic patterns?</li>
+                <li><strong>Scope:</strong> API rate limiting, user throttling, or both?</li>
+                <li><strong>Granularity:</strong> Per user, IP, API key, or combination?</li>
+                <li><strong>Time Windows:</strong> Seconds, minutes, hours, or multiple windows?</li>
+                <li><strong>Deployment:</strong> Centralized service or library/middleware?</li>
+                <li><strong>Response:</strong> Block requests or queue them?</li>
+                <li><strong>Rules:</strong> Static limits or dynamic based on user tiers?</li>
+                <li><strong>Monitoring:</strong> Real-time metrics and alerting needed?</li>
+            </ul>
+
+            <h2>1.3 Functional Requirements</h2>
+            <ol>
+                <li><strong>Request Limiting:</strong> Enforce rate limits based on configurable rules</li>
+                <li><strong>Multiple Dimensions:</strong> Limit by user ID, IP address, API key, endpoint</li>
+                <li><strong>Flexible Time Windows:</strong> Support seconds, minutes, hours, daily limits</li>
+                <li><strong>Rule Management:</strong> Dynamic configuration of rate limiting rules</li>
+                <li><strong>Graceful Handling:</strong> Return appropriate HTTP status codes and headers</li>
+                <li><strong>Bypass Mechanisms:</strong> Whitelist for critical services</li>
+                <li><strong>Analytics:</strong> Track usage patterns and violations</li>
+                <li><strong>Multi-tenancy:</strong> Support different limits per customer/service</li>
+            </ol>
+
+            <h2>1.4 Non-Functional Requirements</h2>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-number">10M</div>
+                    <div>Requests/Second</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-number">&lt;1ms</div>
+                    <div>Latency Overhead</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-number">99.99%</div>
+                    <div>Availability</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-number">±2%</div>
+                    <div>Accuracy Tolerance</div>
+                </div>
+            </div>
+
+            <h3>Additional Requirements:</h3>
+            <ul>
+                <li><strong>Consistency:</strong> Eventually consistent across distributed nodes</li>
+                <li><strong>Performance:</strong> Minimal impact on request processing time</li>
+                <li><strong>Scalability:</strong> Horizontal scaling with stateless design</li>
+                <li><strong>Fault Tolerance:</strong> Fail-open behavior during outages</li>
+                <li><strong>Memory Efficiency:</strong> Optimized data structures for high throughput</li>
+            </ul>
+
+            <h2>1.5 Rate Limiting Algorithms Comparison</h2>
+            <table>
+                <tr>
+                    <th>Algorithm</th>
+                    <th>Pros</th>
+                    <th>Cons</th>
+                    <th>Use Case</th>
+                </tr>
+                <tr>
+                    <td>Token Bucket</td>
+                    <td>Handles bursts, smooth traffic</td>
+                    <td>Complex implementation</td>
+                    <td>API gateways</td>
+                </tr>
+                <tr>
+                    <td>Leaky Bucket</td>
+                    <td>Consistent output rate</td>
+                    <td>Poor burst handling</td>
+                    <td>Traffic shaping</td>
+                </tr>
+                <tr>
+                    <td>Fixed Window</td>
+                    <td>Simple, memory efficient</td>
+                    <td>Traffic spikes at boundaries</td>
+                    <td>Basic rate limiting</td>
+                </tr>
+                <tr>
+                    <td>Sliding Window Log</td>
+                    <td>Accurate, no boundary issues</td>
+                    <td>High memory usage</td>
+                    <td>Precise limiting</td>
+                </tr>
+                <tr>
+                    <td>Sliding Window Counter</td>
+                    <td>Balance of accuracy/efficiency</td>
+                    <td>Approximation errors</td>
+                    <td>Distributed systems</td>
+                </tr>
+            </table>
+
+            <h2>1.6 Success Metrics</h2>
+            <table>
+                <tr>
+                    <th>Metric</th>
+                    <th>Target</th>
+                    <th>Critical Threshold</th>
+                </tr>
+                <tr>
+                    <td>Request Processing Latency</td>
+                    <td>&lt; 1ms</td>
+                    <td>&gt; 5ms</td>
+                </tr>
+                <tr>
+                    <td>Rate Limit Accuracy</td>
+                    <td>&gt; 98%</td>
+                    <td>&lt; 95%</td>
+                </tr>
+                <tr>
+                    <td>System Availability</td>
+                    <td>99.99%</td>
+                    <td>&lt; 99.9%</td>
+                </tr>
+                <tr>
+                    <td>False Positive Rate</td>
+                    <td>&lt; 0.1%</td>
+                    <td>&gt; 1%</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- API Design -->
+        <div class="page">
+            <h1>2. API Design</h1>
+
+            <h2>2.1 Rate Limiter Service APIs</h2>
+
+            <h3>Check Rate Limit</h3>
+            <div class="code-block">
+POST /api/v1/rate-limit/check
+
+Request Headers:
+  Content-Type: application/json
+  Authorization: Bearer {service_token}
+
+Request Body:
+{
+  "key": "user:12345",
+  "resource": "api.posts.create",
+  "tokens_requested": 1,
+  "client_ip": "192.168.1.100",
+  "user_agent": "MyApp/1.0",
+  "metadata": {
+    "user_tier": "premium",
+    "endpoint": "/api/posts",
+    "method": "POST"
+  }
+}
+
+Response (200 - Allow):
+{
+  "allowed": true,
+  "remaining_tokens": 99,
+  "reset_time": 1640995200,
+  "retry_after": null,
+  "current_usage": {
+    "requests_made": 1,
+    "window_start": 1640995140
+  }
+}
+
+Response (429 - Rate Limited):
+{
+  "allowed": false,
+  "remaining_tokens": 0,
+  "reset_time": 1640995200,
+  "retry_after": 45,
+  "error": {
+    "code": "RATE_LIMIT_EXCEEDED",
+    "message": "Rate limit exceeded. Try again in 45 seconds.",
+    "limit": 100,
+    "window_seconds": 3600
+  }
+}
+            </div>
+
+            <h3>Batch Rate Limit Check</h3>
+            <div class="code-block">
+POST /api/v1/rate-limit/check/batch
+
+Request Body:
+{
+  "requests": [
+    {
+      "key": "user:12345",
+      "resource": "api.posts.create",
+      "tokens_requested": 1
+    },
+    {
+      "key": "user:12345", 
+      "resource": "api.posts.read",
+      "tokens_requested": 5
+    }
+  ]
+}
+
+Response (200):
+{
+  "results": [
+    {
+      "key": "user:12345",
+      "resource": "api.posts.create",
+      "allowed": true,
+      "remaining_tokens": 99
+    },
+    {
+      "key": "user:12345",
+      "resource": "api.posts.read", 
+      "allowed": false,
+      "remaining_tokens": 0,
+      "retry_after": 30
+    }
+  ]
+}
+            </div>
+
+            <h2>2.2 Configuration Management APIs</h2>
+            <div class="code-block">
+# Create/Update Rate Limit Rule
+PUT /api/v1/admin/rules
+
+{
+  "rule_id": "api_posts_create",
+  "resource": "api.posts.create",
+  "limits": [
+    {
+      "window_seconds": 60,
+      "max_requests": 10,
+      "burst_capacity": 15
+    },
+    {
+      "window_seconds": 3600,
+      "max_requests": 1000,
+      "burst_capacity": 1200
+    }
+  ],
+  "conditions": {
+    "user_tier": ["free", "basic"],
+    "ip_whitelist": ["192.168.1.0/24"]
+  },
+  "actions": {
+    "on_violation": "block",
+    "response_headers": {
+      "X-RateLimit-Limit": "10",
+      "X-RateLimit-Remaining": "{remaining}",
+      "X-RateLimit-Reset": "{reset_time}"
+    }
+  }
+}
+
+# Get Current Usage
+GET /api/v1/admin/usage/{key}?resource={resource}&window=3600
+
+Response:
+{
+  "key": "user:12345",
+  "resource": "api.posts.create",
+  "current_usage": {
+    "requests": 45,
+    "window_start": 1640995140,
+    "window_end": 1640998740
+  },
+  "limits": {
+    "max_requests": 100,
+    "remaining": 55
+  }
+}
+            </div>
+
+            <h2>2.3 HTTP Headers Standard</h2>
+            <div class="code-block">
+# Response headers for rate limited APIs
+HTTP/1.1 200 OK
+X-RateLimit-Limit: 1000
+X-RateLimit-Remaining: 999
+X-RateLimit-Reset: 1640995200
+X-RateLimit-Used: 1
+X-RateLimit-Window: 3600
+
+# When rate limit exceeded
+HTTP/1.1 429 Too Many Requests
+X-RateLimit-Limit: 1000
+X-RateLimit-Remaining: 0
+X-RateLimit-Reset: 1640995200
+X-RateLimit-Retry-After: 45
+Content-Type: application/json
+
+{
+  "error": "Rate limit exceeded",
+  "message": "You have exceeded the rate limit of 1000 requests per hour",
+  "retry_after": 45
+}
+            </div>
+
+            <h2>2.4 SDK/Client Library Interface</h2>
+            <div class="code-block">
+// Java SDK Example
+public class RateLimiterClient {
+    
+    public RateLimitResult checkLimit(String key, String resource, int tokens) {
+        RateLimitRequest request = RateLimitRequest.builder()
+            .key(key)
+            .resource(resource) 
+            .tokensRequested(tokens)
+            .build();
+            
+        return rateLimiterService.checkRateLimit(request);
+    }
+    
+    @CircuitBreaker(fallbackMethod = "allowByDefault")
+    public boolean isAllowed(String key, String resource) {
+        try {
+            RateLimitResult result = checkLimit(key, resource, 1);
+            return result.isAllowed();
+        } catch (Exception e) {
+            log.error("Rate limiter service unavailable", e);
+            return true; // Fail open
+        }
+    }
+}
+
+// Usage in application
+@RestController
+public class PostController {
+    
+    @RateLimited(resource = "api.posts.create", key = "#{user.id}")
+    @PostMapping("/posts")
+    public ResponseEntity<Post> createPost(@RequestBody Post post, 
+                                          Authentication auth) {
+        // Business logic here
+        return ResponseEntity.ok(postService.create(post));
+    }
+}
+            </div>
+        </div>
+
+        <!-- Database Design -->
+        <div class="page">
+            <h1>3. Database Design</h1>
+
+            <h2>3.1 Rate Limit Rules Schema</h2>
+
+            <h3>Rate Limit Rules Table</h3>
+            <div class="code-block">
+CREATE TABLE rate_limit_rules (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    rule_name VARCHAR(255) NOT NULL UNIQUE,
+    resource_pattern VARCHAR(500) NOT NULL,
+    
+    -- Rate limiting configuration
+    window_seconds INTEGER NOT NULL,
+    max_requests INTEGER NOT NULL,
+    burst_capacity INTEGER DEFAULT max_requests,
+    algorithm rate_limit_algorithm DEFAULT 'sliding_window_counter',
+    
+    -- Conditions
+    conditions JSONB, -- user_tier, ip_ranges, headers, etc.
+    priority INTEGER DEFAULT 100,
+    
+    -- Actions
+    action_on_violation action_type DEFAULT 'block',
+    custom_response JSONB,
+    
+    -- Metadata
+    created_by VARCHAR(255),
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    -- Indexes
+    INDEX idx_resource_pattern (resource_pattern),
+    INDEX idx_active_priority (is_active, priority DESC),
+    INDEX idx_algorithm (algorithm)
+);
+
+CREATE TYPE rate_limit_algorithm AS ENUM (
+    'token_bucket', 'leaky_bucket', 'fixed_window',
+    'sliding_window_log', 'sliding_window_counter'
+);
+
+CREATE TYPE action_type AS ENUM ('block', 'throttle', 'log_only');
+            </div>
+
+            <h3>Rate Limit Counters (In-Memory/Redis)</h3>
+            <div class="code-block">
+-- Redis data structures for different algorithms
+
+-- 1. Sliding Window Counter
+-- Key: "counter:user:12345:api.posts.create:1640995140"
+-- Value: Hash with subwindow counts
+HSET counter:user:12345:api.posts.create:1640995140 
+     "0" 10 "1" 8 "2" 12 "3" 5 TTL 3600
+
+-- 2. Token Bucket  
+-- Key: "bucket:user:12345:api.posts.create"
+-- Value: Hash with tokens and last_refill
+HSET bucket:user:12345:api.posts.create
+     "tokens" 95 "last_refill" 1640995180 "capacity" 100
+
+-- 3. Sliding Window Log
+-- Key: "log:user:12345:api.posts.create" 
+-- Value: Sorted Set with timestamps as scores
+ZADD log:user:12345:api.posts.create 1640995180 "req1" 1640995185 "req2"
+
+-- 4. Fixed Window
+-- Key: "window:user:12345:api.posts.create:1640995200"
+-- Value: Simple counter
+INCR window:user:12345:api.posts.create:1640995200
+EXPIRE window:user:12345:api.posts.create:1640995200 3600
+            </div>
+
+            <h2>3.2 Analytics & Monitoring Schema</h2>
+            <div class="code-block">
+CREATE TABLE rate_limit_events (
+    id BIGSERIAL PRIMARY KEY,
+    event_time TIMESTAMP NOT NULL,
+    key_identifier VARCHAR(500) NOT NULL,
+    resource VARCHAR(500) NOT NULL,
+    rule_id UUID REFERENCES rate_limit_rules(id),
+    
+    -- Request details
+    client_ip INET,
+    user_agent VARCHAR(1000),
+    request_method VARCHAR(10),
+    request_path VARCHAR(1000),
+    
+    -- Rate limit details
+    limit_exceeded BOOLEAN NOT NULL,
+    current_usage INTEGER,
+    limit_threshold INTEGER,
+    tokens_requested INTEGER DEFAULT 1,
+    
+    -- Response details  
+    action_taken action_type,
+    response_time_ms INTEGER,
+    
+    -- Partitioning by date for performance
+    PARTITION BY RANGE (event_time)
+);
+
+-- Create monthly partitions
+CREATE TABLE rate_limit_events_2024_01 PARTITION OF rate_limit_events
+    FOR VALUES FROM ('2024-01-01') TO ('2024-02-01');
+
+-- Indexes for analytics queries
+CREATE INDEX idx_events_time_key ON rate_limit_events (event_time, key_identifier);
+CREATE INDEX idx_events_resource_time ON rate_limit_events (resource, event_time);
+CREATE INDEX idx_events_limit_exceeded ON rate_limit_events (limit_exceeded, event_time);
+            </div>
+
+            <h2>3.3 Configuration Tables</h2>
+            <div class="code-block">
+CREATE TABLE api_clients (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    client_id VARCHAR(255) NOT NULL UNIQUE,
+    client_name VARCHAR(255) NOT NULL,
+    api_key_hash VARCHAR(512),
+    
+    -- Rate limiting tiers
+    tier client_tier DEFAULT 'basic',
+    custom_limits JSONB,
+    
+    -- Status
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    INDEX idx_client_id (client_id),
+    INDEX idx_tier (tier)
+);
+
+CREATE TYPE client_tier AS ENUM ('free', 'basic', 'premium', 'enterprise');
+
+-- Whitelist/Blacklist management
+CREATE TABLE access_control_lists (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    list_type access_list_type NOT NULL,
+    identifier_type identifier_type NOT NULL,
+    identifier_value VARCHAR(500) NOT NULL,
+    resource_pattern VARCHAR(500),
+    reason VARCHAR(1000),
+    expires_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    INDEX idx_type_identifier (list_type, identifier_type, identifier_value),
+    INDEX idx_resource_pattern (resource_pattern)
+);
+
+CREATE TYPE access_list_type AS ENUM ('whitelist', 'blacklist');
+CREATE TYPE identifier_type AS ENUM ('ip_address', 'ip_range', 'user_id', 'api_key');
+            </div>
+
+            <h2>3.4 Data Distribution Strategy</h2>
+            <div class="success-box">
+                <strong>Multi-Tier Storage Architecture:</strong>
+                <ul>
+                    <li><strong>L1 Cache (Local):</strong> In-memory counters for hot keys (1-minute TTL)</li>
+                    <li><strong>L2 Cache (Redis):</strong> Distributed counters and rate limit state</li>
+                    <li><strong>L3 Storage (PostgreSQL):</strong> Rules, configuration, analytics</li>
+                    <li><strong>Analytics Store:</strong> Time-series database for historical data</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- High Level Design -->
+        <div class="page">
+            <h1>4. High Level Design (HLD)</h1>
+
+            <h2>4.1 System Architecture Overview</h2>
+            <div class="diagram">
+                <div style="margin-bottom: 30px;">
+                    <div class="box">Client Apps</div>
+                    <div class="box">API Gateway</div>
+                    <div class="box">Web Services</div>
+                </div>
+                
+                <div style="margin: 20px 0;">
+                    <span class="arrow">↓</span>
+                </div>
+                
+                <div style="margin-bottom: 30px;">
+                    <div class="box limiter-box">Rate Limiter<br/>Middleware</div>
+                    <span class="arrow">↔</span>
+                    <div class="box service-box">Rate Limiter<br/>Service</div>
+                    <span class="arrow">↔</span>
+                    <div class="box service-box">Rule Engine</div>
+                </div>
+                
+                <div style="margin: 20px 0;">
+                    <span class="arrow">↓</span>
+                </div>
+                
+                <div style="margin-bottom: 30px;">
+                    <div class="box db-box">Redis Cluster<br/>(Counters)</div>
+                    <span class="arrow">↔</span>
+                    <div class="box db-box">PostgreSQL<br/>(Rules)</div>
+                    <span class="arrow">↔</span>
+                    <div class="box db-box">ClickHouse<br/>(Analytics)</div>
+                </div>
+                
+                <div style="margin: 20px 0;">
+                    <span class="arrow">↓</span>
+                </div>
+                
+                <div>
+                    <div class="box external-box">Monitoring<br/>(Prometheus)</div>
+                    <div class="box external-box">Alerting<br/>(PagerDuty)</div>
+                    <div class="box external-box">Dashboard<br/>(Grafana)</div>
+                </div>
+            </div>
+
+            <h2>4.2 Rate Limiting Algorithms Deep Dive</h2>
+
+            <h3>Token Bucket Algorithm</h3>
+            <div class="algorithm-box">
+                <strong>Concept:</strong> Bucket holds tokens that are consumed by requests and refilled at a constant rate.
+                <br/><br/>
+                <div class="algorithm-visual">
+                    Bucket Capacity: 100 tokens<br/>
+                    Refill Rate: 10 tokens/second<br/>
+                    <br/>
+                    Current State:<br/>
+                    <div class="bucket" style="height: 80px;">
+                        <div class="bucket-fill" style="height: 60%;"></div>
+                    </div>
+                    60 tokens available<br/>
+                    <br/>
+                    Token Flow:<br/>
+                    <div class="token-circle">+</div>
+                    <div class="token-circle">+</div>
+                    <div class="token-circle">-</div> ← Request consumes 1 token
+                </div>
+            </div>
+
+            <div class="code-block">
+public class TokenBucket {
+    private final long capacity;
+    private final long refillRate; // tokens per second
+    private long tokens;
+    private long lastRefillTime;
+    
+    public synchronized boolean tryConsume(int tokensRequested) {
+        refillTokens();
+        
+        if (tokens >= tokensRequested) {
+            tokens -= tokensRequested;
+            return true;
+        }
+        return false;
+    }
+    
+    private void refillTokens() {
+        long now = System.currentTimeMillis();
+        long tokensToAdd = (now - lastRefillTime) / 1000 * refillRate;
+        tokens = Math.min(capacity, tokens + tokensToAdd);
+        lastRefillTime = now;
+    }
+}
+            </div>
+
+            <h3>Sliding Window Counter Algorithm</h3>
+            <div class="algorithm-box">
+                <strong>Concept:</strong> Divide time window into smaller sub-windows and maintain counters for each.
+                <br/><br/>
+                <div class="algorithm-visual">
+                    Window: 1 hour (3600s), Sub-windows: 60 seconds each<br/>
+                    <br/>
+                    [10] [15] [8] [12] [20] [5] [18] [22] [9] [11] ... (60 buckets)<br/>
+                    <br/>
+                    Current calculation: Sum of all buckets = 130 requests<br/>
+                    Limit: 1000/hour → ✅ Allowed
+                </div>
+            </div>
+
+            <div class="code-block">
+public class SlidingWindowCounter {
+    private final int windowSize;
+    private final int subWindowCount;
+    private final int subWindowSize;
+    private final AtomicLongArray counters;
+    
+    public boolean isAllowed(int limit) {
+        long now = System.currentTimeMillis() / 1000;
+        long currentWindow = now / subWindowSize;
+        
+        // Clean old windows
+        cleanupOldWindows(currentWindow);
+        
+        // Count current usage
+        long totalRequests = 0;
+        for (int i = 0; i < subWindowCount; i++) {
+            totalRequests += counters.get(i);
+        }
+        
+        if (totalRequests < limit) {
+            // Increment counter for current sub-window
+            int index = (int)(currentWindow % subWindowCount);
+            counters.incrementAndGet(index);
+            return true;
+        }
+        return false;
+    }
+}
+            </div>
+
+            <h2>4.3 Distributed Rate Limiting Architecture</h2>
+            <div class="flow-diagram">
+                <div>
+                    <div class="flow-step">1. Request Arrives</div>
+                    <div class="arrow">↓</div>
+                    <div class="flow-step">2. Extract Rate Limit Key</div>
+                    <div class="arrow">↓</div>
+                    <div class="flow-step">3. Check Local Cache</div>
+                    <div class="arrow">↓</div>
+                    <div class="flow-step">4. Query Redis if Miss</div>
+                    <div class="arrow">↓</div>
+                    <div class="flow-step">5. Apply Rate Limit Logic</div>
+                    <div class="arrow">↓</div>
+                    <div class="flow-step">6. Update Counters</div>
+                    <div class="arrow">↓</div>
+                    <div class="flow-step">7. Return Allow/Deny</div>
+                </div>
+            </div>
+
+            <h2>4.4 Technology Stack</h2>
+            <table>
+                <tr>
+                    <th>Layer</th>
+                    <th>Technology</th>
+                    <th>Justification</th>
+                </tr>
+                <tr>
+                    <td>Application</td>
+                    <td>Java/Go + Spring Boot</td>
+                    <td>High performance, mature ecosystem</td>
+                </tr>
+                <tr>
+                    <td>In-Memory Store</td>
+                    <td>Redis Cluster</td>
+                    <td>Sub-millisecond latency, atomic operations</td>
+                </tr>
+                <tr>
+                    <td>Configuration DB</td>
+                    <td>PostgreSQL</td>
+                    <td>ACID compliance, complex queries</td>
+                </tr>
+                <tr>
+                    <td>Analytics DB</td>
+                    <td>ClickHouse</td>
+                    <td>Fast analytical queries, compression</td>
+                </tr>
+                <tr>
+                    <td>Message Queue</td>
+                    <td>Apache Kafka</td>
+                    <td>Event streaming, audit logs</td>
+                </tr>
+                <tr>
+                    <td>Monitoring</td>
+                    <td>Prometheus + Grafana</td>
+                    <td>Metrics collection, visualization</td>
+                </tr>
+                <tr>
+                    <td>Service Discovery</td>
+                    <td>Consul/Eureka</td>
+                    <td>Dynamic configuration, health checks</td>
+                </tr>
+            </table>
+
+            <h2>4.5 Deployment Architecture</h2>
+            <div class="success-box">
+                <strong>Multi-Region Deployment:</strong>
+                <ul>
+                    <li><strong>Edge Locations:</strong> Rate limiter deployed close to users</li>
+                    <li><strong>Regional Clusters:</strong> Redis clusters per region for low latency</li>
+                    <li><strong>Global Configuration:</strong> Centralized rule management with CDC</li>
+                    <li><strong>Fallback Strategy:</strong> Local caching with eventual consistency</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Deep Dive -->
+        <div class="page">
+            <h1>5. Deep Dive - Distributed Counters</h1>
+
+            <h2>5.1 Challenge: Accurate Counting in Distributed Systems</h2>
+
+            <div class="warning-box">
+                <strong>Core Problem:</strong> Maintaining accurate rate limit counters across multiple nodes while ensuring low latency and high availability. Race conditions and network partitions can lead to inaccurate counting.
+            </div>
+
+            <h3>Solution 1: Centralized Counters with Redis</h3>
+            <div class="code-block">
+@Service
+public class DistributedRateLimiter {
+    
+    @Autowired
+    private RedisTemplate&lt;String, String&gt; redisTemplate;
+    
+    public RateLimitResult checkRateLimit(String key, int limit, int windowSeconds) {
+        String redisKey = "rate_limit:" + key;
+        long currentTime = System.currentTimeMillis() / 1000;
+        long windowStart = currentTime - windowSeconds;
+        
+        // Use Redis pipeline for atomic operations
+        List&lt;Object&gt; results = redisTemplate.executePipelined(
+            (RedisCallback&lt;Object&gt;) connection -> {
+                // Remove expired entries
+                connection.zRemRangeByScore(redisKey.getBytes(), 0, windowStart);
+                
+                // Count current requests
+                Long count = connection.zCard(redisKey.getBytes());
+                
+                // Add current request
+                connection.zAdd(redisKey.getBytes(), currentTime, 
+                              UUID.randomUUID().toString().getBytes());
+                
+                // Set TTL
+                connection.expire(redisKey.getBytes(), windowSeconds);
+                
+                return null;
+            }
+        );
+        
+        long currentCount = (Long) results.get(1);
+        boolean allowed = currentCount < limit;
+        
+        return RateLimitResult.builder()
+            .allowed(allowed)
+            .currentUsage(currentCount)
+            .remaining(Math.max(0, limit - currentCount - 1))
+            .resetTime(currentTime + windowSeconds)
+            .build();
+    }
+}
+            </div>
+
+            <h3>Solution 2: Approximate Counting with Local Aggregation</h3>
+            <div class="code-block">
+@Component
+public class LocalAggregatingRateLimiter {
+    
+    private final Map&lt;String, LocalCounter&gt; localCounters = new ConcurrentHashMap&lt;&gt;();
+    private final ScheduledExecutorService scheduler = 
+        Executors.newScheduledThreadPool(2);
+    
+    @PostConstruct
+    public void init() {
+        // Flush local counters to Redis every 100ms
+        scheduler.scheduleAtFixedRate(this::flushCounters, 100, 100, MILLISECONDS);
+        
+        // Cleanup expired counters every 5 seconds  
+        scheduler.scheduleAtFixedRate(this::cleanupCounters, 5, 5, SECONDS);
+    }
+    
+    public boolean isAllowed(String key, int limit) {
+        LocalCounter counter = localCounters.computeIfAbsent(key, 
+            k -> new LocalCounter(k, limit));
+            
+        // Check local estimate first (fast path)
+        if (counter.getLocalCount() >= limit * 1.1) { // 10% buffer
+            return false;
+        }
+        
+        // Increment local counter
+        counter.increment();
+        
+        // Periodically sync with Redis for accurate count
+        if (counter.shouldSync()) {
+            syncWithRedis(counter);
+        }
+        
+        return counter.getEstimatedTotal() <= limit;
+    }
+    
+    private void syncWithRedis(LocalCounter counter) {
+        CompletableFuture.runAsync(() -> {
+            try {
+                // Get global count from Redis
+                long globalCount = redisTemplate.opsForValue()
+                    .increment("global:" + counter.getKey(), counter.flushLocal());
+                
+                counter.updateGlobalEstimate(globalCount);
+                
+            } catch (Exception e) {
+                log.warn("Failed to sync with Redis for key: {}", counter.getKey(), e);
+                // Continue with local estimation
+            }
+        });
+    }
+    
+    static class LocalCounter {
+        private final AtomicLong localCount = new AtomicLong(0);
+        private volatile long globalEstimate = 0;
+        private volatile long lastSyncTime = System.currentTimeMillis();
+        
+        public void increment() {
+            localCount.incrementAndGet();
+        }
+        
+        public long getEstimatedTotal() {
+            return globalEstimate + localCount.get();
+        }
+        
+        public boolean shouldSync() {
+            return System.currentTimeMillis() - lastSyncTime > 500 || // Every 500ms
+                   localCount.get() > 10; // Or after 10 local requests
+        }
+        
+        public long flushLocal() {
+            return localCount.getAndSet(0);
+        }
+    }
+}
+            </div>
+
+            <h2>5.2 Redis Lua Scripts for Atomic Operations</h2>
+            <div class="code-block">
+-- Token Bucket implementation in Redis Lua
+local key = KEYS[1]
+local capacity = tonumber(ARGV[1])
+local refill_rate = tonumber(ARGV[2])
+local tokens_requested = tonumber(ARGV[3])
+local current_time = tonumber(ARGV[4])
+
+-- Get current bucket state
+local bucket = redis.call('HMGET', key, 'tokens', 'last_refill')
+local tokens = tonumber(bucket[1]) or capacity
+local last_refill = tonumber(bucket[2]) or current_time
+
+-- Calculate tokens to add based on time elapsed
+local time_elapsed = current_time - last_refill
+local tokens_to_add = math.floor(time_elapsed * refill_rate)
+tokens = math.min(capacity, tokens + tokens_to_add)
+
+-- Check if request can be satisfied
+if tokens >= tokens_requested then
+    tokens = tokens - tokens_requested
+    
+    -- Update bucket state
+    redis.call('HMSET', key, 
+               'tokens', tokens, 
+               'last_refill', current_time)
+    redis.call('EXPIRE', key, 3600)
+    
+    return {1, tokens, capacity - tokens}  -- allowed, remaining, used
+else
+    -- Update last_refill time even if request denied
+    redis.call('HMSET', key, 
+               'tokens', tokens, 
+               'last_refill', current_time)
+    redis.call('EXPIRE', key, 3600)
+    
+    return {0, tokens, capacity - tokens}  -- denied, remaining, used  
+end
+            </div>
+
+            <h2>5.3 Handling Network Partitions</h2>
+            <div class="algorithm-box">
+                <strong>Partition Tolerance Strategy:</strong>
+                <ul>
+                    <li><strong>Circuit Breaker:</strong> Fail-open when Redis is unreachable</li>
+                    <li><strong>Local Fallback:</strong> Use in-memory counters with conservative limits</li>
+                    <li><strong>Eventual Consistency:</strong> Sync when partition heals</li>
+                    <li><strong>Monitoring:</strong> Alert on partition events</li>
+                </ul>
+            </div>
+
+            <div class="code-block">
+@Component
+public class FaultTolerantRateLimiter {
+    
+    private final CircuitBreaker circuitBreaker;
+    private final Map&lt;String, LocalRateLimiter&gt; localLimiters = new ConcurrentHashMap&lt;&gt;();
+    
+    public boolean isAllowed(String key, int limit) {
+        // Try distributed rate limiting first
+        if (circuitBreaker.getState() == CircuitBreaker.State.CLOSED) {
+            try {
+                return distributedRateLimiter.isAllowed(key, limit);
+            } catch (Exception e) {
+                log.warn("Distributed rate limiter failed, falling back to local", e);
+                circuitBreaker.recordException(e);
+            }
+        }
+        
+        // Fallback to local rate limiting with conservative limit
+        int conservativeLimit = (int) (limit * 0.8); // 20% buffer
+        return getLocalLimiter(key, conservativeLimit).isAllowed();
+    }
+    
+    private LocalRateLimiter getLocalLimiter(String key, int limit) {
+        return localLimiters.computeIfAbsent(key, 
+            k -> new TokenBucketRateLimiter(limit, limit / 60)); // 1 minute refill
+    }
+    
+    @EventListener
+    public void handleCircuitBreakerStateChange(CircuitBreakerStateChangeEvent event) {
+        if (event.getNewState() == CircuitBreaker.State.HALF_OPEN) {
+            log.info("Circuit breaker half-open, testing connection to Redis");
+        } else if (event.getNewState() == CircuitBreaker.State.CLOSED) {
+            log.info("Connection to Redis restored, resuming distributed rate limiting");
+            // Optionally sync local counters with Redis
+            syncLocalCounters();
+        }
+    }
+}
+            </div>
+
+            <h2>5.4 Performance Optimizations</h2>
+            <table>
+                <tr>
+                    <th>Optimization</th>
+                    <th>Technique</th>
+                    <th>Impact</th>
+                </tr>
+                <tr>
+                    <td>Hot Key Detection</td>
+                    <td>Local caching for frequently accessed keys</td>
+                    <td>90% latency reduction for hot keys</td>
+                </tr>
+                <tr>
+                    <td>Batching</td>
+                    <td>Group multiple rate limit checks</td>
+                    <td>50% reduction in Redis calls</td>
+                </tr>
+                <tr>
+                    <td>Connection Pooling</td>
+                    <td>Shared Redis connections across threads</td>
+                    <td>Reduced connection overhead</td>
+                </tr>
+                <tr>
+                    <td>Pipelining</td>
+                    <td>Batch Redis commands</td>
+                    <td>30% throughput improvement</td>
+                </tr>
+            </table>
+
+            <h2>5.5 Monitoring & Observability</h2>
+            <div class="code-block">
+@Component
+@RequiredArgsConstructor
+public class RateLimiterMetrics {
+    
+    private final MeterRegistry meterRegistry;
+    
+    private final Counter allowedRequests = Counter.builder("rate_limiter.requests")
+        .tag("result", "allowed")
+        .register(meterRegistry);
+        
+    private final Counter deniedRequests = Counter.builder("rate_limiter.requests")
+        .tag("result", "denied") 
+        .register(meterRegistry);
+        
+    private final Timer responseTime = Timer.builder("rate_limiter.response_time")
+        .register(meterRegistry);
+    
+    public void recordRequest(String key, String resource, boolean allowed, 
+                            Duration duration) {
+        
+        Timer.Sample sample = Timer.start(meterRegistry);
+        sample.stop(responseTime);
+        
+        if (allowed) {
+            allowedRequests.increment(Tags.of("key", key, "resource", resource));
+        } else {
+            deniedRequests.increment(Tags.of("key", key, "resource", resource));
+        }
+    }
+    
+    @EventListener
+    public void handleRateLimitViolation(RateLimitViolationEvent event) {
+        // Send to analytics system
+        analyticsService.recordViolation(event);
+        
+        // Trigger alerts for abnormal patterns
+        if (isAnomalousTraffic(event)) {
+            alertService.sendAlert("Potential DDoS detected", event);
+        }
+    }
+}
+            </div>
+        </div>
+
+        <!-- Implementation & Scaling -->
+        <div class="page">
+            <h1>6. Implementation Details</h1>
+
+            <h2>6.1 Middleware Integration</h2>
+            <div class="code-block">
+// Spring Boot Interceptor
+@Component
+public class RateLimitInterceptor implements HandlerInterceptor {
+    
+    @Override
+    public boolean preHandle(HttpServletRequest request, 
+                           HttpServletResponse response, 
+                           Object handler) throws Exception {
+        
+        RateLimit annotation = getRateLimitAnnotation(handler);
+        if (annotation == null) return true;
+        
+        String key = buildRateLimitKey(request, annotation);
+        RateLimitResult result = rateLimiterService.checkRateLimit(
+            key, annotation.resource(), annotation.requests()
+        );
+        
+        // Set response headers
+        response.setHeader("X-RateLimit-Limit", String.valueOf(annotation.limit()));
+        response.setHeader("X-RateLimit-Remaining", String.valueOf(result.getRemaining()));
+        response.setHeader("X-RateLimit-Reset", String.valueOf(result.getResetTime()));
+        
+        if (!result.isAllowed()) {
+            response.setStatus(429);
+            response.setHeader("X-RateLimit-Retry-After", String.valueOf(result.getRetryAfter()));
+            response.getWriter().write("{\"error\":\"Rate limit exceeded\"}");
+            return false;
+        }
+        
+        return true;
+    }
+}
+
+// Usage with annotation
+@RestController
+public class APIController {
+    
+    @RateLimit(resource = "api.users.create", 
+              requests = 10, 
+              window = 60, 
+              key = "#{request.remoteAddr}")
+    @PostMapping("/users")
+    public User createUser(@RequestBody User user) {
+        return userService.create(user);
+    }
+}
+            </div>
+
+            <h2>6.2 Configuration Management</h2>
+            <div class="code-block">
+@Configuration
+@EnableConfigurationProperties(RateLimitProperties.class)
+public class RateLimitConfig {
+    
+    @Bean
+    @ConditionalOnProperty(value = "rate-limiter.storage.type", havingValue = "redis")
+    public DistributedRateLimiter distributedRateLimiter(RedisTemplate redisTemplate) {
+        return new RedisRateLimiter(redisTemplate);
+    }
+    
+    @Bean
+    @ConditionalOnProperty(value = "rate-limiter.storage.type", havingValue = "memory")
+    public InMemoryRateLimiter inMemoryRateLimiter() {
+        return new InMemoryRateLimiter();
+    }
+    
+    @Bean
+    public RateLimitRuleEngine ruleEngine(RateLimitRuleRepository repository) {
+        return new DatabaseRuleEngine(repository);
+    }
+}
+
+@ConfigurationProperties(prefix = "rate-limiter")
+@Data
+public class RateLimitProperties {
+    private StorageType storage = StorageType.REDIS;
+    private boolean failOpen = true;
+    private int localCacheSize = 10000;
+    private Duration localCacheTtl = Duration.ofMinutes(5);
+    
+    public enum StorageType { REDIS, MEMORY, HYBRID }
+}
+            </div>
+
+            <h2>6.3 Rule Engine Implementation</h2>
+            <div class="code-block">
+public interface RateLimitRuleEngine {
+    List&lt;RateLimitRule&gt; findMatchingRules(String resource, 
+                                         Map&lt;String, Object&gt; context);
+}
+
+@Service
+public class DatabaseRuleEngine implements RateLimitRuleEngine {
+    
+    @Cacheable("rate-limit-rules")
+    public List&lt;RateLimitRule&gt; findMatchingRules(String resource, 
+                                               Map&lt;String, Object&gt; context) {
+        
+        // Find all rules that match the resource pattern
+        List&lt;RateLimitRule&gt; candidateRules = ruleRepository
+            .findByResourcePatternMatching(resource);
+        
+        return candidateRules.stream()
+            .filter(rule -> evaluateConditions(rule, context))
+            .sorted(Comparator.comparing(RateLimitRule::getPriority).reversed())
+            .collect(Collectors.toList());
+    }
+    
+    private boolean evaluateConditions(RateLimitRule rule, Map&lt;String, Object&gt; context) {
+        JsonNode conditions = rule.getConditions();
+        if (conditions == null || conditions.isNull()) return true;
+        
+        // Evaluate user tier condition
+        if (conditions.has("user_tier")) {
+            String userTier = (String) context.get("user_tier");
+            JsonNode allowedTiers = conditions.get("user_tier");
+            if (!isValueInArray(userTier, allowedTiers)) return false;
+        }
+        
+        // Evaluate IP range condition  
+        if (conditions.has("ip_ranges")) {
+            String clientIp = (String) context.get("client_ip");
+            JsonNode ipRanges = conditions.get("ip_ranges");
+            if (!isIpInRanges(clientIp, ipRanges)) return false;
+        }
+        
+        // Evaluate time-based conditions
+        if (conditions.has("time_restrictions")) {
+            LocalTime currentTime = LocalTime.now();
+            if (!isTimeAllowed(currentTime, conditions.get("time_restrictions"))) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+}
+            </div>
+
+            <h2>6.4 Testing Strategy</h2>
+            <div class="success-box">
+                <strong>Comprehensive Testing Approach:</strong>
+                <ul>
+                    <li><strong>Unit Tests:</strong> Algorithm correctness, edge cases</li>
+                    <li><strong>Integration Tests:</strong> Redis operations, database queries</li>
+                    <li><strong>Load Tests:</strong> Performance under high concurrency</li>
+                    <li><strong>Chaos Tests:</strong> Behavior during network partitions</li>
+                    <li><strong>Property-Based Tests:</strong> Rate limit accuracy over time</li>
+                </ul>
+            </div>
+
+            <h1>7. Scaling & Optimization</h1>
+
+            <h2>7.1 Horizontal Scaling</h2>
+            <table>
+                <tr>
+                    <th>Component</th>
+                    <th>Scaling Strategy</th>
+                    <th>Considerations</th>
+                </tr>
+                <tr>
+                    <td>Rate Limiter Service</td>
+                    <td>Stateless replicas behind load balancer</td>
+                    <td>Session affinity not required</td>
+                </tr>
+                <tr>
+                    <td>Redis Cluster</td>
+                    <td>Hash-based sharding by rate limit key</td>
+                    <td>Consistent hashing for even distribution</td>
+                </tr>
+                <tr>
+                    <td>Configuration DB</td>
+                    <td>Read replicas for rule queries</td>
+                    <td>Rules are read-heavy workload</td>
+                </tr>
+                <tr>
+                    <td>Analytics DB</td>
+                    <td>Time-based partitioning</td>
+                    <td>Recent data queried most frequently</td>
+                </tr>
+            </table>
+
+            <h2>7.2 Performance Benchmarks</h2>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-number">10M</div>
+                    <div>Requests/Second</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-number">0.5ms</div>
+                    <div>P99 Latency</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-number">50MB</div>
+                    <div>Memory per 1M Keys</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-number">99.99%</div>
+                    <div>Accuracy Rate</div>
+                </div>
+            </div>
+
+            <h1>8. Security & Compliance</h1>
+
+            <h2>8.1 Security Measures</h2>
+            <ul>
+                <li><strong>Authentication:</strong> API keys, OAuth 2.0 for admin APIs</li>
+                <li><strong>Authorization:</strong> Role-based access control for rule management</li>
+                <li><strong>Encryption:</strong> TLS for all communications, encrypted Redis</li>
+                <li><strong>Input Validation:</strong> Sanitize all rate limit keys and parameters</li>
+                <li><strong>Audit Logging:</strong> Track all configuration changes</li>
+            </ul>
+
+            <h2>8.2 Privacy & Compliance</h2>
+            <div class="warning-box">
+                <strong>Data Privacy Considerations:</strong>
+                <ul>
+                    <li><strong>IP Address Hashing:</strong> Hash IP addresses for rate limiting</li>
+                    <li><strong>Data Retention:</strong> Automatic cleanup of old counter data</li>
+                    <li><strong>Anonymization:</strong> Remove PII from analytics data</li>
+                    <li><strong>Right to Deletion:</strong> API for removing user rate limit data</li>
+                </ul>
+            </div>
+
+            <div style="text-align: center; margin-top: 50px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+                <h3>End of Document</h3>
+                <p style="color: #666;">This rate limiter system design provides a comprehensive foundation for building a scalable, accurate, and fault-tolerant rate limiting service.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

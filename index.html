@@ -179,6 +179,10 @@
             overflow: hidden;
         }
 
+        .card-header.rate-limiter {
+            background: linear-gradient(135deg, #e67e22, #d35400);
+        }
+
         .card-header::before {
             content: '';
             position: absolute;
@@ -411,19 +415,19 @@
 
         <div class="stats">
             <div class="stat-card">
-                <div class="stat-number" id="totalSystems">2</div>
+                <div class="stat-number" id="totalSystems">3</div>
                 <div class="stat-label">System Designs</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number">50K+</div>
-                <div class="stat-label">Daily Users</div>
+                <div class="stat-number">60M+</div>
+                <div class="stat-label">Daily Requests</div>
             </div>
             <div class="stat-card">
                 <div class="stat-number">99.9%</div>
                 <div class="stat-label">Uptime Target</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number">12</div>
+                <div class="stat-number">15</div>
                 <div class="stat-label">Technologies</div>
             </div>
         </div>
@@ -437,6 +441,7 @@
             <button class="filter-btn active" data-filter="all">All Systems</button>
             <button class="filter-btn" data-filter="financial">Financial</button>
             <button class="filter-btn" data-filter="iot">IoT & Hardware</button>
+            <button class="filter-btn" data-filter="infrastructure">Infrastructure</button>
             <button class="filter-btn" data-filter="ecommerce">E-Commerce</button>
             <button class="filter-btn" data-filter="social">Social Media</button>
             <button class="filter-btn" data-filter="streaming">Media & Streaming</button>
@@ -512,6 +517,45 @@
                     </div>
                     <div class="card-actions">
                         <a href="ParkingLot.html" class="btn btn-primary">
+                            <i class="fas fa-book"></i> View Design
+                        </a>
+                        <a href="#" class="btn btn-secondary">
+                            <i class="fas fa-download"></i> Download PDF
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rate Limiter System Card -->
+            <div class="system-card" data-category="infrastructure" data-keywords="rate limiter api protection throttling distributed">
+                <div class="card-header rate-limiter">
+                    <div class="card-icon"><i class="fas fa-shield-alt"></i></div>
+                    <h3 class="card-title">Rate Limiter System</h3>
+                    <p class="card-subtitle">Scalable traffic control & API protection</p>
+                </div>
+                <div class="card-body">
+                    <p class="card-description">
+                        A distributed rate limiting system that protects APIs from abuse, ensures fair usage, and scales to handle millions of requests per second with sub-millisecond latency.
+                    </p>
+                    <div class="card-features">
+                        <span class="feature-tag">Token Bucket</span>
+                        <span class="feature-tag">Redis Cluster</span>
+                        <span class="feature-tag">Lua Scripts</span>
+                        <span class="feature-tag">Circuit Breaker</span>
+                        <span class="feature-tag">Multi-Algorithm</span>
+                    </div>
+                    <div class="card-stats">
+                        <div class="stat-item">
+                            <i class="fas fa-tachometer-alt"></i>
+                            <span>10M+ Requests/Second</span>
+                        </div>
+                        <div class="stat-item">
+                            <i class="fas fa-bolt"></i>
+                            <span>&lt;1ms Latency</span>
+                        </div>
+                    </div>
+                    <div class="card-actions">
+                        <a href="RateLimiter.html" class="btn btn-primary">
                             <i class="fas fa-book"></i> View Design
                         </a>
                         <a href="#" class="btn btn-secondary">
